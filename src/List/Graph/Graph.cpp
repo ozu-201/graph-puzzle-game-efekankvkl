@@ -1,16 +1,17 @@
-//
-// Created by Olcay Taner YILDIZ on 8.05.2023.
-//
 
+#include <fstream>
+#include <iostream>
 #include "Graph.h"
-#include "src/Array/DisjointSet.h"
-#include "src/List/Queue.h"
-#include "src/Array/Heap/MinHeap.h"
+#include "../../Array/DisjointSet.h"
+#include "../Queue.h"
+#include "../../Array/Heap/MinHeap.h"
 
 namespace list {
 
     Graph::Graph(int _vertexCount) : AbstractGraph(_vertexCount){
         edges = new EdgeList[vertexCount];
+        words = new std::string[vertexCount];
+        numberOfWords = 0;
         for (int i = 0; i < vertexCount; i++) {
             edges[i] = EdgeList();
         }
@@ -28,6 +29,7 @@ namespace list {
 
     Graph::~Graph() {
         delete[] edges;
+        delete[] words;
     }
 
     void Graph::connectedComponentsDisjointSet() {
@@ -169,6 +171,139 @@ namespace list {
                 edge = edge->getNext();
             }
         }
+    }
+
+    void Graph::addWord(std::string word) {
+        words[numberOfWords] = std::move(word);
+        numberOfWords++;
+    }
+
+    void Graph::addEdge(std::string word1, std::string word2) {
+        int index1 = findIndex(word1);
+        int index2 = findIndex(word2);
+
+        addEdge(index1, index2);
+        addEdge(index2, index1);
+    }
+
+    int Graph::findIndex(std::string word) {
+        int index = 0;
+        while(index < numberOfWords){
+            if(word == words[index]){
+                return index;
+            }
+            index++;
+        }
+        return -1;
+    }
+
+    int Graph::BFS(int startNode, int endNode) {
+        bool* visited = new bool[vertexCount];
+
+        if(startNode == endNode){
+            std::cout << words[startNode] << " -> ";
+            return 0;
+        }
+
+        for(int i = 0; i < vertexCount; i++){
+            visited[i] = false;
+        }
+
+        Edge* edge;
+        int fromNode, toNode;
+        Queue queue = Queue();
+        queue.enqueue(new Node(startNode));
+        while (!queue.isEmpty()){
+            fromNode = queue.dequeue()->getData();
+            edge = edges[fromNode].getHead();
+            while (edge != nullptr) {
+                toNode = edge->getTo();
+                if(toNode == endNode){
+
+                    BFS(startNode, fromNode);
+                    std::cout << words[toNode] << " -> ";
+                    return 0;
+                }
+                if (!visited[toNode]){
+                    visited[toNode] = true;
+                    queue.enqueue(new Node(toNode));
+                }
+                edge = edge->getNext();
+            }
+        }
+
+        return -1;
+    }
+
+    int Graph::BFS(std::string startWord, std::string endWord) {
+        int startIndex = findIndex(startWord);
+        int endIndex = findIndex(endWord);
+
+        return BFS(startIndex, endIndex);
+    }
+
+    void Graph::Dijkstra(std::string startWord, std::string endWord) {
+        int startIndex = findIndex(endWord);
+        int endIndex = findIndex(startWord);
+
+        Path* paths = dijkstra(startIndex);
+
+        Path p = paths[endIndex];
+        while(p.getDistance() != 0){
+            std::cout << words[endIndex] << " -> ";
+            endIndex = p.getPrevious();
+            p = paths[endIndex];
+
+        }
+        std::cout << words[endIndex];
+    }
+   // ıt starts the puzzle game
+    list::Graph Graph::initializePuzzleGame(int wordLength) {
+        int count = 0;
+
+        string myLine;
+        ifstream myFile("C:\\Users\\TEMP\\CLionProjects\\graph-puzzle-game-efekankvkl\\Dictionary.txt", ifstream::in);
+
+        while(getline(myFile, myLine)){
+            if(myLine.length() == wordLength){
+                count++;
+            }
+        }
+
+        myFile.close();
+
+        list::Graph graph(count);
+
+        int i1 = 0;
+
+        ifstream myFile2("C:\\Users\\TEMP\\CLionProjects\\graph-puzzle-game-efekankvkl\\Dictionary.txt", ifstream::in);
+
+        while(getline(myFile2, myLine)){
+            if(myLine.length() == wordLength){
+                graph.addWord(myLine);
+                i1++;
+            }
+        }
+
+        myFile2.close();
+
+        int diff = 0;
+        for(int i = 0; i < count; i++){
+            for(int j = i; j < count ; j++){
+                diff = 0;
+                for(int k = 0; k < wordLength; k++){
+                    if(graph.words[i][k] != graph.words[j][k]){
+                        diff++;
+                    }
+                }
+                if(diff == 1){
+                    graph.addEdge(i, j);
+                    graph.addEdge(j, i);
+                }
+            }
+        }
+
+        return graph;
     }
 
 }

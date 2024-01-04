@@ -1,0 +1,10 @@
+stone
+store
+score
+dark
+bark
+barn
+cat
+cot
+cog
+dog
